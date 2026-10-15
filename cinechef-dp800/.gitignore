@@ -1,0 +1,24 @@
+# Secretos (nunca se suben al repositorio)
+.env
+*.pfx
+*.key
+*.pem
+secrets.*
+
+# Copias y ficheros de base de datos
+*.bak
+*.mdf
+*.ldf
+*.ndf
+
+# Modelos y binarios de IA: se descargan siguiendo el README
+onnx_runtime/
+*.onnx
+*.dll
+
+# Editor / sistema
+.vs/
+.vscode/
+*.user
+Thumbs.db
+~$*
