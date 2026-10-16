@@ -115,7 +115,7 @@ CREATE TABLE dbo.Users (
     CONSTRAINT PK_Users PRIMARY KEY (UserId),
     CONSTRAINT UQ_Users_UserName UNIQUE (UserName),
     CONSTRAINT UQ_Users_Email UNIQUE (Email),
-    CONSTRAINT CK_Users_BirthDate CHECK (BirthDate >= '1900-01-01'),
+    CONSTRAINT CK_Users_BirthDate CHECK (BirthDate >= '1900-01-01' AND BirthDate <= CAST(GETDATE() AS DATE)),
     CONSTRAINT CK_Users_Email CHECK (Email LIKE '%_@_%.__%')
 );
 

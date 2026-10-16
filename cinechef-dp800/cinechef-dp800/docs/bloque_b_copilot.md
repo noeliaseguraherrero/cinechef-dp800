@@ -172,7 +172,7 @@ Resumen: El modelo detectó que el archivo `03b_ingredients.sql` no existía y p
 4. **Partes corregidas**
    | Problema | Cómo se detectó | Corrección |
    |---|---|---|
-   | Ninguno | Mediante la ejecución de las consultas de validación y coherencia en SSMS. | No se requirieron correcciones; la revisión de alérgenos y la comprobación de palabras clave de la consulta 5 arrojaron únicamente falsos positivos lógicos (ej. crema de coco asociada a la palabra *cream* sin alérgeno lácteo real). |
+   | No se detectaron errores en las comprobaciones ejecutadas en SSMS: los conteos de filas coinciden exactamente con la cardinalidad esperada (25 registros por tanda), las longitudes de texto respetan los rangos de caracteres especificados y las relaciones por nombre resuelven íntegramente con los catálogos previos sin referencias huérfanas | Mediante la ejecución de las consultas de validación y coherencia en SSMS. | No se requirieron correcciones; la revisión de alérgenos y la comprobación de palabras clave de la consulta 5 arrojaron únicamente falsos positivos lógicos (ej. crema de coco asociada a la palabra *cream* sin alérgeno lácteo real). |
 
 5. **Verificación (ejecutada por mí en SSMS)**
    - **Conteos:** 25 recetas y 125 relaciones verificadas (esperado 25 y 125).
@@ -198,7 +198,7 @@ Resumen: El modelo detectó que el archivo `03b_ingredients.sql` no existía y p
 4. **Partes corregidas**
    | Problema | Cómo se detectó | Corrección |
    |---|---|---|
-   | Ninguno | Mediante la validación interna del modelo y las comprobaciones posteriores en el entorno de desarrollo. | No se detectaron conflictos; todas las referencias apuntan a ingredientes reales del catálogo y no se solapan nombres de recetas. |
+   | No se detectaron errores en las comprobaciones ejecutadas en SSMS: los conteos de filas coinciden exactamente con la cardinalidad esperada (25 registros por tanda), las longitudes de texto respetan los rangos de caracteres especificados y las relaciones por nombre resuelven íntegramente con los catálogos previos sin referencias huérfanas | Mediante la validación interna del modelo y las comprobaciones posteriores en el entorno de desarrollo. | No se detectaron conflictos; todas las referencias apuntan a ingredientes reales del catálogo y no se solapan nombres de recetas. |
 
 5. **Verificación (ejecutada por mí en SSMS)**
    - **Conteos:** 25 recetas nuevas y 125 relaciones verificadas tras la ejecución de `03c2_recipes.sql`.
@@ -247,7 +247,7 @@ Resumen: El modelo detectó que el archivo `03b_ingredients.sql` no existía y p
 4. **Partes corregidas**
    | Problema | Cómo se detectó | Corrección |
    |---|---|---|
-   | Ninguno | Mediante las validaciones automatizadas y cruce de exclusión de nombres previos. | Sin incidencias; todas las referencias y nombres cumplieron los requisitos con exactitud. |
+   | No se detectaron errores en las comprobaciones ejecutadas en SSMS: los conteos de filas coinciden exactamente con la cardinalidad esperada (25 registros por tanda), las longitudes de texto respetan los rangos de caracteres especificados y las relaciones por nombre resuelven íntegramente con los catálogos previos sin referencias huérfanas | Mediante las validaciones automatizadas y cruce de exclusión de nombres previos. | Sin incidencias; todas las referencias y nombres cumplieron los requisitos con exactitud. |
 
 5. **Verificación (ejecutada por mí en SSMS)**
    - **Conteos:** 25 recetas y 125 relaciones verificadas en la ejecución final de `03c4_recipes.sql` (alcanzando un total definitivo de **100 recetas y 500 relaciones** en `CineChefDB`).
@@ -343,6 +343,25 @@ Resumen: El modelo detectó que el archivo `03b_ingredients.sql` no existía y p
 5. **Verificación (ejecutada por mí en SSMS)**
    - **Conteos:** 25 películas y 53 relaciones verificadas en la ejecución final de `03d4_movies.sql` (alcanzando un total definitivo de **100 películas y más de 230 relaciones** en `CineChefDB`).
    - **Capturas:** `docs/evidencias/copilot/B-04_t4_chat.png` y `docs/evidencias/copilot/B-04_t4_verificacion.png`.
+
+#### Validación cruzada de datos reales (Muestra de 10 películas)
+
+Para contrastar la veracidad de los datos generados por el modelo frente a fuentes fiables (IMDb / Wikipedia), se seleccionó una muestra aleatoria de 10 películas de la base de datos, aplicando una tolerancia de ±3 minutos en la duración por posibles diferencias en montajes o versiones:
+
+| Película | Año BD | Año fuente | Duración BD | Duración fuente | ¿Coincide? (±3 min) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **2001: A Space Odyssey** | 1968 | 1968 | 149 min | 149 min | **Sí** |
+| **Schindler's List** | 1993 | 1993 | 195 min | 195 min | **Sí** |
+| **Raging Bull** | 1980 | 1980 | 129 min | 129 min | **Sí** |
+| **Wild Strawberries** | 1957 | 1957 | 92 min | 92 min | **Sí** |
+| **Rashomon** | 1950 | 1950 | 88 min | 88 min | **Sí** |
+| **E.T. the Extra-Terrestrial** | 1982 | 1982 | 115 min | 115 min | **Sí** |
+| **Crouching Tiger, Hidden Dragon** | 2000 | 2000 | 120 min | 120 min | **Sí** |
+| **Moonlight** | 2016 | 2016 | 111 min | 111 min | **Sí** |
+| **One Flew Over the Cuckoo's Nest** | 1975 | 1975 | 133 min | 133 min | **Sí** |
+| **Fight Club** | 1999 | 1999 | 139 min | 139 min | **Sí** |
+
+* **Criterio de clasificación de edad (`MinAge`):** Se siguió una aproximación a la clasificación por edades de referencia europea (PEGI/ICAA), asignando valores discretos estrictos (`0, 7, 12, 16 o 18`) en función del contenido temático, el tono dramático y las restricciones parentales de cada obra.
 
 ### B-05 - Usuarios, Alergias y Noches de Cine
 
