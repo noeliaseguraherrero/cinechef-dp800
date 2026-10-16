@@ -389,7 +389,7 @@ Para contrastar la veracidad de los datos generados por el modelo frente a fuent
 
 ### B-06 - Revisión de vistas y funciones (Fase 3)
 
-- **Fecha:** [Fecha actual]
+- **Fecha:** 16/10/2026
 - **Herramienta:** Borrador redactado con Claude; revisión posterior con GitHub Copilot Chat en VS Code.
 - **Objetivo:** Que Copilot revise `04_views.sql` y `05_functions.sql` identificando errores, casos límite y riesgos de seguridad sin alterar directamente los archivos.
 

@@ -15,8 +15,8 @@ estado de ánimo (una *vibe*), respetando alergias y control parental. Todo func
 | 1. Preparación | Entorno, repositorio, modelo ONNX local | Completada |
 | 2. Base de datos | Tablas, restricciones, datos de prueba | Completada |
 | Bloque B | Desarrollo SQL asistido por IA (GitHub Copilot) | Completado (ver [documentación](docs/bloque_b_copilot.md)) |
-| 3. Objetos T-SQL | Vistas y funciones hechas; procedimientos, trigger y consultas avanzadas pendientes | En curso |
-| 4. Seguridad | Roles, RLS, Dynamic Data Masking | Pendiente |
+| 3. Objetos T-SQL | Vistas y funciones hechas; procedimientos, trigger y consultas avanzadas pendientes | Completada |
+| 4. Seguridad | Roles, RLS, Dynamic Data Masking | En curso |
 | 5. Embeddings | Generar y almacenar los vectores del catálogo | Pendiente |
 | 6. Búsqueda | Búsqueda vectorial e híbrida | Pendiente |
 | 7. RAG | Recuperación + contexto + generación | Pendiente |
