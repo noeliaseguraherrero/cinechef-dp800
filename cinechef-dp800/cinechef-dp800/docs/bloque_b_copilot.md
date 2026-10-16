@@ -387,6 +387,74 @@ Para contrastar la veracidad de los datos generados por el modelo frente a fuent
    - **Restricciones:** Cero conflictos de alérgenos y cumplimiento estricto de restricciones de edad parental.
    - **Capturas:** `docs/evidencias/copilot/B-05_chat.png` y `docs/evidencias/copilot/B-05_verificacion.png`.
 
+### B-06 - Revisión de vistas y funciones (Fase 3)
+
+- **Fecha:** [Fecha actual]
+- **Herramienta:** Borrador redactado con Claude; revisión posterior con GitHub Copilot Chat en VS Code.
+- **Objetivo:** Que Copilot revise `04_views.sql` y `05_functions.sql` identificando errores, casos límite y riesgos de seguridad sin alterar directamente los archivos.
+
+#### 1. Prompt utilizado
+> Revisa estas vistas y funciones de SQL Server 2025. Busca: errores de sintaxis, casos límite no contemplados (usuarios sin alergias, recetas sin ingredientes, usuarios inexistentes), riesgos de seguridad, problemas de rendimiento y cualquier cosa que puedas explicar de forma más sencilla. Explica con tus palabras qué hace fn_SafeRecipes y por qué se comprueba que el usuario exista. No modifiques los archivos: responde con una lista de hallazgos.
+
+#### 2. Respuesta de la IA
+Copilot revisó los archivos y devolvió 15 hallazgos junto con la explicación funcional de `fn_SafeRecipes`. No ejecutó código en SQL Server. 
+- **Captura:** `docs/evidencias/copilot/B-06_chat.png`.
+
+#### 3. Partes aceptadas
+- **Confirmaciones de comportamiento correcto:** Hallazgos 1, 2, 3 y 8.
+- **Asuntos derivados para la Fase 4:** Hallazgos 4 (autorización de UserId), 5 (RLS) y 9 (frontera de seguridad en vistas).
+- **Limitaciones documentadas:** Hallazgo 7 (no se modela la contaminación cruzada).
+- **Temas pospuestos:** Hallazgos 14 (Fase 8) y 15 (Fase 5).
+- La explicación conceptual de `fn_SafeRecipes` ofrecida por el modelo fue correcta.
+
+#### 4. Partes corregidas
+| Hallazgo | Cómo se detectó | Corrección |
+|---|---|---|
+| 6. Receta sin ingredientes se consideraba segura | Revisión estática de Copilot | `fn_SafeRecipes` exige ahora al menos un ingrediente registrado (falla cerrado). |
+| 11. Fechas de nacimiento futuras permitidas | Revisión estática de Copilot | Actualización del `CHECK` en `database/02_create_tables.sql` (`CK_Users_BirthDate`) para rechazar fechas posteriores a hoy. |
+
+*Rechazados con justificación:* Hallazgo 10 (zona horaria en entorno local de servidor único), Hallazgo 12 (año bisiesto sin impacto práctico) y Hallazgo 13 (cubierto por pruebas de `validate_data.sql`).
+
+#### 5. Verificación
+- **Pruebas unitarias (`tests/phase3_objects_tests.sql`):** 32 pruebas en OK (incluyendo las dos nuevas pruebas transaccionales para validar el rechazo de recetas incompletas y fechas futuras).
+- **Reproducibilidad completa:** Ejecución íntegra y validada mediante `scripts/load_all.ps1`.
+- **Capturas:** `docs/evidencias/B-06_verificacion.png`.
+
+**Conclusión del bloque:** 
+De los 15 hallazgos reportados por Copilot, una minoría condujo a mejoras directas en el código (corrección de seguridad en recetas sin ingredientes y validación estricta de fechas), mientras que otros anticiparon decisiones de arquitectura ya planificadas para fases posteriores (como la seguridad a nivel de fila y el contexto de sesión). La revisión estática del modelo demostró ser útil para detectar casos límite, pero requirió de forma indispensable la auditoría humana y la ejecución de pruebas transaccionales en SSMS para validar su verdadera aplicabilidad.
+
+### B-07 - Revisión de procedimientos y triggers (Fase 3 - Segunda Mitad)
+
+- **Fecha:** 16/10/2026
+- **Herramienta:** GitHub Copilot Chat en VS Code (revisión estática con desafío de estrés, casos límite y seguridad).
+- **Objetivo:** Analizar `06_audit_trigger.sql` y `07_procedures.sql` explicando el funcionamiento de tablas virtuales, proponiendo casos de prueba adversarios y evaluando riesgos de seguridad.
+
+#### 1. Prompt utilizado
+> Revisa 06_audit_trigger.sql y 07_procedures.sql. (1) Explica con palabras qué hace el trigger y por qué compara inserted con deleted. (2) Propón 5 casos de prueba que intenten romper estos objetos (entradas límite, concurrencia, valores NULL, actualizaciones de varias filas). (3) Indica qué riesgos de seguridad ves. No modifiques los archivos.
+
+#### 2. Respuesta de la IA
+- **Trigger:** Explicó correctamente el uso conjunto de `inserted` y `deleted` para capturar transiciones de estado y modificaciones de valoraciones en `MovieNights`[cite: 30].
+- **Casos de prueba:** Propuso escenarios estructurados sobre transiciones `NULL`, actualizaciones masivas por conjuntos, límites de valores en `Rating` y condiciones de carrera concurrente[cite: 31, 32].
+- **Defecto lógico detectado (Caso 5):** Reveló que `usp_RegisterMovieNight` permitía registrar recetas sin ingredientes debido a que `fn_SafeRecipes` las considera seguras por no tener alérgenos registrados[cite: 32].
+- **Riesgos de seguridad:** Identificó la vulnerabilidad de suplantación de identidad al pasar `@UserId` como un parámetro libre y la dependencia crítica de las políticas de seguridad (RLS)[cite: 32, 33].
+- **Captura:** `docs/evidencias/copilot/B-07_chat.png`.
+
+#### 3. Partes aceptadas
+- La explicación conceptual del disparador y su diseño orientado a conjuntos.
+- Los vectores de riesgo de seguridad relacionados con la autorización de usuarios y la exposición de parámetros abiertos (que justifican plenamente la implementación de la Fase 4).
+
+#### 4. Partes corregidas
+| Hallazgo / Caso | Cómo se detectó | Corrección |
+|---|---|---|
+| Recetas sin ingredientes aceptadas por el procedimiento | Revisión analítica de Copilot (Caso 5) | Validación explícita en el procedimiento para exigir al menos un ingrediente vinculado en `RecipeIngredients`[cite: 32]. |
+
+#### 5. Verificación
+- **Ejecución de pruebas adversarias en SSMS:** Comprobación de que los límites de valoración y los nulos se comportan de forma robusta bajo transacciones explícitas.
+- **Capturas:** `docs/evidencias/B-07_verificacion.png`.
+
+**Conclusión del bloque:** 
+La revisión adversaria de Copilot superó una mera validación sintáctica al descubrir un fallo lógico sutil en la validación de recetas vacías. Asimismo, los riesgos de suplantación de identidad detectados marcan la hoja de ruta exacta para la **Fase 4 (Seguridad)**, donde se resolverán mediante el control de contexto de sesión y Row-Level Security (RLS).
+
 
 ### Qué se considera una buena ficha
 - Hay al menos **una corrección real** documentada. Si Copilot acertó todo a la primera, demuestra con pruebas (no con "parece correcto") que está bien.
