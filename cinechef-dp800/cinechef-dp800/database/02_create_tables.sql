@@ -1,11 +1,28 @@
 /*==============================================================
   CineChef - Fase 2: creación de tablas (Bloque A)
-  11 tablas con PK, FK, UNIQUE, CHECK y DEFAULT.
+  12 tablas con PK, FK, UNIQUE, CHECK y DEFAULT.
   Las columnas Embedding VECTOR(384) admiten NULL: se rellenan
   en la Fase 5 con AI_GENERATE_EMBEDDINGS.
   El script es repetible: borra y recrea las tablas.
+
+  Cambios posteriores:
+  - Fase 3 (revisión B-06): CK_Users_BirthDate rechaza fechas futuras.
+  - Fase 4: tabla UserPrincipals (usuario de la aplicación -> usuario
+    de base de datos) y limpieza previa de los objetos de seguridad
+    que dependen de las tablas (se recrean en 09_security.sql).
 ==============================================================*/
 USE CineChefDB;
+GO
+
+/*-------- Objetos de seguridad que dependen de las tablas --------
+  Con SCHEMABINDING no se pueden borrar las tablas mientras existan la
+  política RLS y sus funciones de predicado. 09_security.sql los recrea. */
+IF EXISTS (SELECT 1 FROM sys.security_policies WHERE name = N'pol_UserData')
+    DROP SECURITY POLICY Security.pol_UserData;
+IF OBJECT_ID(N'Security.fn_OwnerOrAdmin', N'IF') IS NOT NULL
+    DROP FUNCTION Security.fn_OwnerOrAdmin;
+IF OBJECT_ID(N'Security.fn_OwnerNutritionistOrAdmin', N'IF') IS NOT NULL
+    DROP FUNCTION Security.fn_OwnerNutritionistOrAdmin;
 GO
 
 /*-------- Borrado en orden inverso de dependencias --------*/
@@ -14,6 +31,7 @@ DROP TABLE IF EXISTS dbo.UserAllergies;
 DROP TABLE IF EXISTS dbo.IngredientAllergens;
 DROP TABLE IF EXISTS dbo.RecipeIngredients;
 DROP TABLE IF EXISTS dbo.MovieGenres;
+DROP TABLE IF EXISTS dbo.UserPrincipals;
 DROP TABLE IF EXISTS dbo.Users;
 DROP TABLE IF EXISTS dbo.Allergens;
 DROP TABLE IF EXISTS dbo.Ingredients;
@@ -109,14 +127,26 @@ CREATE TABLE dbo.IngredientAllergens (
 CREATE TABLE dbo.Users (
     UserId     INT IDENTITY(1,1) NOT NULL,
     UserName   NVARCHAR(50)      NOT NULL,
-    Email      NVARCHAR(256)     NOT NULL,      -- se enmascarará (Dynamic Data Masking)
-    BirthDate  DATE              NOT NULL,      -- se enmascarará y servirá para el control parental
+    Email      NVARCHAR(256)     NOT NULL,      -- se enmascara (Dynamic Data Masking, 09_security.sql)
+    BirthDate  DATE              NOT NULL,      -- se enmascara y sirve para el control parental
     CreatedAt  DATETIME2(0)      NOT NULL CONSTRAINT DF_Users_CreatedAt DEFAULT SYSUTCDATETIME(),
     CONSTRAINT PK_Users PRIMARY KEY (UserId),
     CONSTRAINT UQ_Users_UserName UNIQUE (UserName),
     CONSTRAINT UQ_Users_Email UNIQUE (Email),
     CONSTRAINT CK_Users_BirthDate CHECK (BirthDate >= '1900-01-01' AND BirthDate <= CAST(GETDATE() AS DATE)),
     CONSTRAINT CK_Users_Email CHECK (Email LIKE '%_@_%.__%')
+);
+
+/*-------- Correspondencia usuario de la aplicación -> usuario de base de datos --------
+  Permite que Row-Level Security y los procedimientos sepan qué fila de Users
+  corresponde a quien está ejecutando la consulta (USER_NAME()). Se rellena en
+  09_security.sql. Ningún rol de usuario tiene acceso directo a esta tabla.   */
+CREATE TABLE dbo.UserPrincipals (
+    UserId        INT     NOT NULL,
+    PrincipalName SYSNAME NOT NULL,
+    CONSTRAINT PK_UserPrincipals PRIMARY KEY (UserId),
+    CONSTRAINT UQ_UserPrincipals_PrincipalName UNIQUE (PrincipalName),
+    CONSTRAINT FK_UserPrincipals_Users FOREIGN KEY (UserId) REFERENCES dbo.Users (UserId) ON DELETE CASCADE
 );
 
 CREATE TABLE dbo.UserAllergies (

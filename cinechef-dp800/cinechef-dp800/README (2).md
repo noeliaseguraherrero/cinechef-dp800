@@ -15,10 +15,10 @@ estado de ánimo (una *vibe*), respetando alergias y control parental. Todo func
 | 1. Preparación | Entorno, repositorio, modelo ONNX local | Completada |
 | 2. Base de datos | Tablas, restricciones, datos de prueba | Completada |
 | Bloque B | Desarrollo SQL asistido por IA (GitHub Copilot) | Completado (ver [documentación](docs/bloque_b_copilot.md)) |
-| 3. Objetos T-SQL | Vistas y funciones hechas; procedimientos, trigger y consultas avanzadas pendientes | Completada |
-| 4. Seguridad | Roles, RLS, Dynamic Data Masking | En curso |
-| 5. Embeddings | Generar y almacenar los vectores del catálogo | Pendiente |
-| 6. Búsqueda | Búsqueda vectorial e híbrida | Pendiente |
+| 3. Objetos T-SQL | Vistas y funciones hechas; procedimientos, trigger y consultas avanzadas pendientes | En curso |
+| 4. Seguridad | Roles, RLS, Dynamic Data Masking, EXECUTE AS | En curso |
+| 5. Embeddings | Experimento de formato del texto y vectores del catálogo | Completada (ver [docs/embeddings.md](docs/embeddings.md)) |
+| 6. Búsqueda | Búsqueda vectorial, Full-Text e híbrida (RRF) | Completada (ver [docs/busqueda.md](docs/busqueda.md)) |
 | 7. RAG | Recuperación + contexto + generación | Pendiente |
 | 8. Optimización | Planes de ejecución antes/después | Pendiente |
 | 9. Cierre | Informe PDF, presentación, conclusiones | Pendiente |
@@ -133,7 +133,7 @@ Ejecuta en SSMS, por este orden exacto:
 
 | Orden | Script | Contenido |
 |---|---|---|
-| 1 | `database/02_create_tables.sql` | 11 tablas (borra y recrea) |
+| 1 | `database/02_create_tables.sql` | 12 tablas (borra y recrea) |
 | 2 | `database/03a_lookups.sql` | 18 géneros y 14 alérgenos |
 | 3 | `database/03b_ingredients.sql` | 120 ingredientes y sus alérgenos |
 | 4 | `database/03c_recipes.sql`, `03c2`, `03c3`, `03c4` | 100 recetas en 4 tandas |
@@ -143,16 +143,37 @@ Ejecuta en SSMS, por este orden exacto:
 | 8 | `database/05_functions.sql` | 2 funciones en línea |
 | 9 | `database/06_audit_trigger.sql` | Tabla de auditoría y trigger de valoraciones |
 | 10 | `database/07_procedures.sql` | 3 procedimientos almacenados |
+| 11 | `database/09_security.sql` | Roles, usuarios de demostración, RLS, DDM y permisos |
 
 O bien, en un solo paso (ver el apartado siguiente): `.\scripts\load_all.ps1`.
 
-### 8. Verificar la carga
-Ejecuta `tests/verify_counts.sql` (conteos), `tests/validate_data.sql` (calidad de los datos) `tests/phase3_objects_tests.sql` (vistas y funciones) y `tests/phase3b_tests.sql` (trigger y procedimientos). Las consultas avanzadas de `database/08_advanced_queries.sql` son de solo lectura y se ejecutan a mano.
+### 8. Generar los embeddings del catálogo (requiere el modelo del paso 6)
+En SSMS, por este orden:
+1. `ai/04_embedding_experiment.sql` (películas) y `ai/04b_recipe_probe.sql` (recetas): generan tres variantes del texto en tablas temporales y miden cuál ordena mejor (MRR, top-k). Elige la variante de cada tipo con sus resultados (películas: `labeled`; recetas: `plain`).
+2. `ai/05_generate_embeddings.sql`: ajusta `@MovieVariant` y `@RecipeVariant` si has elegido otras y ejecuta. Rellena `Movies.Embedding` y `Recipes.Embedding` y registra la ejecución en `dbo.EmbeddingRun`.
+3. `tests/phase5_embeddings_tests.sql`: comprueba que no falta ningún vector y que regenerar el texto da el mismo vector.
+4. `ai/06_embedding_diagnostics.sql` (opcional): mide la distribución de distancias entre pares de películas y películas-recetas.
+
+Estos scripts **no** forman parte de `scripts/load_all.ps1`, porque dependen del modelo ONNX preparado a mano.
+Detalle y resultados del experimento en [docs/embeddings.md](docs/embeddings.md).
+
+### 9. Búsqueda inteligente (Fase 6)
+En SSMS, por este orden:
+1. `ai/07_fulltext.sql`: catálogo e índices Full-Text sobre `Movies`, `Recipes` e `Ingredients`.
+2. `ai/08_search.sql`: `usp_SearchMovies`, `usp_SearchRecipes` (búsqueda vectorial, Full-Text o híbrida con Reciprocal Rank Fusion) y `usp_SuggestRecipesForMovie` (maridaje película-receta), con sus permisos.
+3. `tests/phase6_search_tests.sql`: 10 pruebas (índices, resultados, alergias, control parental, usuario inexistente, suplantación).
+4. `ai/09_search_evaluation.sql` y `ai/09b_search_semantic_probes.sql` (opcionales): comparan vector, texto e híbrida con sondas.
+
+Ejemplos: `EXEC dbo.usp_SearchRecipes @Query = N'comforting hot meal for a cold rainy evening', @UserId = 9;` y `EXEC dbo.usp_SuggestRecipesForMovie @MovieId = 1, @UserId = 9;`.
+Tampoco forman parte de `load_all.ps1`. Resultados y limitaciones en [docs/busqueda.md](docs/busqueda.md).
+
+### 10. Verificar la carga
+Ejecuta `tests/verify_counts.sql` (conteos), `tests/validate_data.sql` (calidad de los datos), `tests/phase3_objects_tests.sql` (vistas y funciones), `tests/phase3b_tests.sql` (trigger y procedimientos) y `tests/phase4_security_tests.sql` (seguridad, suplantando a cada usuario). La demostración visual está en `tests/security_demo.sql`. Las consultas avanzadas de `database/08_advanced_queries.sql` son de solo lectura y se ejecutan a mano.
 
 ## Reproducibilidad desde cero
 
 ### Opción A: equipo nuevo
-Sigue la sección **Instalación** completa (pasos 1 a 8). Los pasos 5 y 6 (ONNX) son manuales porque los
+Sigue la sección **Instalación** completa (pasos 1 a 9). Los pasos 5 y 6 (ONNX) son manuales porque los
 binarios no se distribuyen con el repositorio.
 
 ### Opción B: reiniciar la base de datos en tu equipo
@@ -209,6 +230,7 @@ Detalle y diagrama en Mermaid: [docs/modelo_datos.md](docs/modelo_datos.md).
 | `Ingredients`, `RecipeIngredients` | Ingredientes y relación N:M con recetas (cantidad y unidad) |
 | `Allergens`, `IngredientAllergens` | Los 14 alérgenos de la UE y qué ingrediente contiene cada uno |
 | `Users`, `UserAllergies` | Usuarios ficticios y sus alergias (datos sensibles) |
+| `UserPrincipals` | Correspondencia entre cada usuario de la aplicación y su usuario de base de datos (la usa RLS) |
 | `MovieNights` | Historial de planes: usuario, película, receta, vibe y valoración |
 
 Decisiones de diseño:
@@ -237,7 +259,7 @@ Decisiones de diseño:
 | Procedimientos y trigger | Pendiente |
 | Consultas avanzadas: CTE, window functions, JSON, regex, fuzzy matching | Pendiente |
 | Seguridad (roles, RLS, Dynamic Data Masking) | Pendiente |
-| Generación de embeddings del catálogo y almacenamiento en `VECTOR` | Pendiente |
+| Generación de embeddings del catálogo y almacenamiento en `VECTOR` | En curso (scripts preparados; falta ejecutar y documentar) |
 | Búsqueda vectorial e híbrida (Full-Text + vectores) | Pendiente |
 | RAG (SQL Server + contexto + Copilot) | Pendiente |
 | Optimización de consultas (planes antes/después) | Pendiente |
@@ -276,23 +298,43 @@ cinechef-dp800/
 │   ├── 03b_ingredients.sql
 │   ├── 03c_recipes.sql ... 03c4_recipes.sql
 │   ├── 03d_movies.sql  ... 03d4_movies.sql
-│   └── 03e_users_nights.sql
+│   ├── 03e_users_nights.sql
+│   ├── 04_views.sql
+│   ├── 05_functions.sql
+│   ├── 06_audit_trigger.sql
+│   ├── 07_procedures.sql
+│   ├── 08_advanced_queries.sql
+│   └── 09_security.sql
 ├── ai/
 │   ├── 00_setup_onnx_runtime.ps1
 │   ├── 01_enable_ai_runtime.sql
 │   ├── 02_create_external_model.sql
-│   └── 03_test_embeddings.sql
+│   ├── 03_test_embeddings.sql
+│   ├── 04_embedding_experiment.sql
+│   ├── 04b_recipe_probe.sql
+│   ├── 05_generate_embeddings.sql
+│   ├── 06_embedding_diagnostics.sql
+│   ├── 07_fulltext.sql
+│   ├── 08_search.sql
+│   ├── 09_search_evaluation.sql
+│   └── 09b_search_semantic_probes.sql
 ├── tests/
 │   ├── phase1_smoke_tests.sql
 │   ├── verify_counts.sql
 │   ├── phase3_objects_tests.sql
 │   ├── phase3b_tests.sql
+│   ├── phase4_security_tests.sql
+│   ├── phase5_embeddings_tests.sql
+│   ├── phase6_search_tests.sql
+│   ├── security_demo.sql
 │   └── validate_data.sql
 ├── docs/
 │   ├── alcance.md
 │   ├── modelo_datos.md / modelo_datos.png
 │   ├── bloque_b_copilot.md
 │   ├── problemas_encontrados.md
+│   ├── seguridad.md
+│   ├── embeddings.md
 │   └── evidencias/             # capturas y respuestas de Copilot
 └── presentation/
 ```

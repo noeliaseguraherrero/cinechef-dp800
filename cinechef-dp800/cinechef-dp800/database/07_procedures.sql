@@ -8,9 +8,12 @@
     50014 receta con alérgenos del usuario
     50015 receta sin ingredientes (no se puede garantizar que sea segura)
     50020 valoración fuera de 1-5    50021 plan inexistente para ese usuario
+    50030 no autorizado: se intenta actuar en nombre de otro usuario
 
-  NOTA (Fase 4): hoy el usuario llega como parámetro. En la fase de
-  seguridad se derivará de la sesión para que nadie actúe en nombre de otro.
+  Control de identidad (Fase 4, hallazgo 4 de la revisión B-06): el
+  usuario llega como parámetro, pero solo se acepta si coincide con
+  quien ejecuta el procedimiento (USER_NAME() mapeado en
+  dbo.UserPrincipals). Los administradores (db_owner) están exentos.
 ==============================================================*/
 USE CineChefDB;
 GO
@@ -44,6 +47,12 @@ BEGIN
             @msg      NVARCHAR(2048);
 
     SET @NightId = NULL;
+
+    -- Identidad: solo el propio usuario (o un administrador) puede actuar en su nombre
+    IF IS_MEMBER(N'db_owner') = 0
+       AND NOT EXISTS (SELECT 1 FROM dbo.UserPrincipals
+                       WHERE UserId = @UserId AND PrincipalName = USER_NAME())
+        THROW 50030, N'No autorizado: solo puedes actuar en tu propio nombre.', 1;
 
     BEGIN TRY
         BEGIN TRAN;
@@ -116,6 +125,12 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
+
+    -- Identidad: solo el propio usuario (o un administrador) puede actuar en su nombre
+    IF IS_MEMBER(N'db_owner') = 0
+       AND NOT EXISTS (SELECT 1 FROM dbo.UserPrincipals
+                       WHERE UserId = @UserId AND PrincipalName = USER_NAME())
+        THROW 50030, N'No autorizado: solo puedes actuar en tu propio nombre.', 1;
 
     IF @Rating IS NOT NULL AND @Rating NOT BETWEEN 1 AND 5
         THROW 50020, N'La valoración debe estar entre 1 y 5.', 1;

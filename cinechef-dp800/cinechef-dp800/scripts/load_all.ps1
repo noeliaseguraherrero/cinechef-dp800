@@ -38,7 +38,12 @@ $files = @(
     "tests\verify_counts.sql",
     "database\04_views.sql",
     "database\05_functions.sql",
-    "tests\phase3_objects_tests.sql"
+    "tests\phase3_objects_tests.sql",
+    "database\06_audit_trigger.sql",
+    "database\07_procedures.sql",
+    "tests\phase3b_tests.sql",
+    "database\09_security.sql",
+    "tests\phase4_security_tests.sql"
 )
 
 if (-not (Get-Command sqlcmd -ErrorAction SilentlyContinue)) {
