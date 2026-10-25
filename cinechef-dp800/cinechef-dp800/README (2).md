@@ -19,7 +19,7 @@ estado de ánimo (una *vibe*), respetando alergias y control parental. Todo func
 | 4. Seguridad | Roles, RLS, Dynamic Data Masking, EXECUTE AS | En curso |
 | 5. Embeddings | Experimento de formato del texto y vectores del catálogo | Completada (ver [docs/embeddings.md](docs/embeddings.md)) |
 | 6. Búsqueda | Búsqueda vectorial, Full-Text e híbrida (RRF) | Completada (ver [docs/busqueda.md](docs/busqueda.md)) |
-| 7. RAG | Recuperación + contexto + generación | Pendiente |
+| 7. RAG | Recuperación + contexto + generación manual en Copilot + verificación | Completada (ver [docs/rag.md](docs/rag.md)) |
 | 8. Optimización | Planes de ejecución antes/después | Pendiente |
 | 9. Cierre | Informe PDF, presentación, conclusiones | Pendiente |
 
@@ -167,7 +167,14 @@ En SSMS, por este orden:
 Ejemplos: `EXEC dbo.usp_SearchRecipes @Query = N'comforting hot meal for a cold rainy evening', @UserId = 9;` y `EXEC dbo.usp_SuggestRecipesForMovie @MovieId = 1, @UserId = 9;`.
 Tampoco forman parte de `load_all.ps1`. Resultados y limitaciones en [docs/busqueda.md](docs/busqueda.md).
 
-### 10. Verificar la carga
+### 10. RAG (Fase 7)
+1. `ai/10_rag.sql`: tabla `dbo.RagSession` y procedimientos `usp_BuildRagPrompt`, `usp_RecordRagAnswer` y `usp_VerifyRagAnswer`.
+2. `tests/phase7_rag_tests.sql`: 9 pruebas (contexto, alergias, edad, línea base, verificación, identidad).
+3. `ai/11_rag_demo.sql`: demostración paso a paso. Se genera el prompt con `usp_BuildRagPrompt`, se pega en GitHub Copilot Chat (**paso manual**, Copilot no es invocable desde T-SQL), se registra la respuesta y se verifica. Las preguntas se escriben en inglés. Para la línea base sin RAG, usa `@WithContext = 0` en una conversación nueva de Copilot y sin acceso al repositorio (modo Ask).
+
+Resultados, comparación RAG frente a LLM solo y limitaciones en [docs/rag.md](docs/rag.md).
+
+### 11. Verificar la carga
 Ejecuta `tests/verify_counts.sql` (conteos), `tests/validate_data.sql` (calidad de los datos), `tests/phase3_objects_tests.sql` (vistas y funciones), `tests/phase3b_tests.sql` (trigger y procedimientos) y `tests/phase4_security_tests.sql` (seguridad, suplantando a cada usuario). La demostración visual está en `tests/security_demo.sql`. Las consultas avanzadas de `database/08_advanced_queries.sql` son de solo lectura y se ejecutan a mano.
 
 ## Reproducibilidad desde cero
@@ -256,12 +263,12 @@ Decisiones de diseño:
 | Desarrollo SQL asistido por IA (Bloque B) | Hecho y documentado |
 | Modelo de embeddings local (ONNX) registrado y validado | Hecho |
 | Vistas y funciones en línea (con pruebas) | Hecho |
-| Procedimientos y trigger | Pendiente |
-| Consultas avanzadas: CTE, window functions, JSON, regex, fuzzy matching | Pendiente |
-| Seguridad (roles, RLS, Dynamic Data Masking) | Pendiente |
-| Generación de embeddings del catálogo y almacenamiento en `VECTOR` | En curso (scripts preparados; falta ejecutar y documentar) |
-| Búsqueda vectorial e híbrida (Full-Text + vectores) | Pendiente |
-| RAG (SQL Server + contexto + Copilot) | Pendiente |
+| Procedimientos y trigger (con auditoría) | Hecho |
+| Consultas avanzadas: CTE, window functions, JSON, regex, fuzzy matching | Hecho (`database/08_advanced_queries.sql`) |
+| Seguridad (roles, RLS, Dynamic Data Masking, EXECUTE AS) | Hecho (ver [docs/seguridad.md](docs/seguridad.md)) |
+| Generación de embeddings del catálogo y almacenamiento en `VECTOR(384)` | Hecho (ver [docs/embeddings.md](docs/embeddings.md)) |
+| Búsqueda vectorial e híbrida (Full-Text + vectores, RRF) | Hecho (ver [docs/busqueda.md](docs/busqueda.md)) |
+| RAG (SQL Server + contexto + Copilot) | Hecho (ver [docs/rag.md](docs/rag.md)) |
 | Optimización de consultas (planes antes/después) | Pendiente |
 
 ## Ejemplos
@@ -317,7 +324,9 @@ cinechef-dp800/
 │   ├── 07_fulltext.sql
 │   ├── 08_search.sql
 │   ├── 09_search_evaluation.sql
-│   └── 09b_search_semantic_probes.sql
+│   ├── 09b_search_semantic_probes.sql
+│   ├── 10_rag.sql
+│   └── 11_rag_demo.sql
 ├── tests/
 │   ├── phase1_smoke_tests.sql
 │   ├── verify_counts.sql
@@ -326,6 +335,7 @@ cinechef-dp800/
 │   ├── phase4_security_tests.sql
 │   ├── phase5_embeddings_tests.sql
 │   ├── phase6_search_tests.sql
+│   ├── phase7_rag_tests.sql
 │   ├── security_demo.sql
 │   └── validate_data.sql
 ├── docs/

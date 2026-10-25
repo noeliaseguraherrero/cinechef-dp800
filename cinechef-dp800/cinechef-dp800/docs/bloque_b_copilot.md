@@ -456,6 +456,7 @@ De los 15 hallazgos reportados por Copilot, una minoría condujo a mejoras direc
 La revisión adversaria de Copilot superó una mera validación sintáctica al descubrir un fallo lógico sutil en la validación de recetas vacías. Asimismo, los riesgos de suplantación de identidad detectados marcan la hoja de ruta exacta para la **Fase 4 (Seguridad)**, donde se resolverán mediante el control de contexto de sesión y Row-Level Security (RLS).
 
 
+
 ### Qué se considera una buena ficha
 - Hay al menos **una corrección real** documentada. Si Copilot acertó todo a la primera, demuestra con pruebas (no con "parece correcto") que está bien.
 - La verificación es **ejecutable** (una consulta con su resultado), no una opinión.
