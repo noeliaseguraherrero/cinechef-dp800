@@ -20,7 +20,7 @@ estado de ánimo (una *vibe*), respetando alergias y control parental. Todo func
 | 5. Embeddings | Experimento de formato del texto y vectores del catálogo | Completada (ver [docs/embeddings.md](docs/embeddings.md)) |
 | 6. Búsqueda | Búsqueda vectorial, Full-Text e híbrida (RRF) | Completada (ver [docs/busqueda.md](docs/busqueda.md)) |
 | 7. RAG | Recuperación + contexto + generación manual en Copilot + verificación | Completada (ver [docs/rag.md](docs/rag.md)) |
-| 8. Optimización | Planes de ejecución antes/después | Pendiente |
+| 8. Optimización | Lecturas lógicas y planes antes/después; índice vectorial | Completada (ver [docs/optimizacion.md](docs/optimizacion.md)) |
 | 9. Cierre | Informe PDF, presentación, conclusiones | Pendiente |
 
 Las secciones marcadas como pendientes se completarán a medida que avance el proyecto.
@@ -174,7 +174,15 @@ Tampoco forman parte de `load_all.ps1`. Resultados y limitaciones en [docs/busqu
 
 Resultados, comparación RAG frente a LLM solo y limitaciones en [docs/rag.md](docs/rag.md).
 
-### 11. Verificar la carga
+### 11. Optimización (Fase 8)
+1. `database/10_indexes.sql`: índice `IX_RecipeIngredients_IngredientId` (ya incluido en `scripts/load_all.ps1`).
+2. `performance/12_perf_setup.sql`: crea el esquema `perf` con 100 000 recetas y 500 000 filas sintéticas (no toca las tablas reales).
+3. `performance/13_perf_before_after.sql`: mide 3 consultas antes y después de crear índices y falla si cambia algún resultado. Las instrucciones para capturar los planes de ejecución están al final del script.
+4. `performance/14_vector_index_experiment.sql` (opcional, **vista previa**): búsqueda vectorial exacta frente a índice DiskANN con 20 000 vectores aleatorios.
+
+Resultados y decisiones en [docs/optimizacion.md](docs/optimizacion.md). El esquema `perf` se puede borrar al terminar.
+
+### 12. Verificar la carga
 Ejecuta `tests/verify_counts.sql` (conteos), `tests/validate_data.sql` (calidad de los datos), `tests/phase3_objects_tests.sql` (vistas y funciones), `tests/phase3b_tests.sql` (trigger y procedimientos) y `tests/phase4_security_tests.sql` (seguridad, suplantando a cada usuario). La demostración visual está en `tests/security_demo.sql`. Las consultas avanzadas de `database/08_advanced_queries.sql` son de solo lectura y se ejecutan a mano.
 
 ## Reproducibilidad desde cero
@@ -269,7 +277,7 @@ Decisiones de diseño:
 | Generación de embeddings del catálogo y almacenamiento en `VECTOR(384)` | Hecho (ver [docs/embeddings.md](docs/embeddings.md)) |
 | Búsqueda vectorial e híbrida (Full-Text + vectores, RRF) | Hecho (ver [docs/busqueda.md](docs/busqueda.md)) |
 | RAG (SQL Server + contexto + Copilot) | Hecho (ver [docs/rag.md](docs/rag.md)) |
-| Optimización de consultas (planes antes/después) | Pendiente |
+| Optimización de consultas (lecturas y planes antes/después, índice vectorial) | Hecho (ver [docs/optimizacion.md](docs/optimizacion.md)) |
 
 ## Ejemplos
 
@@ -310,6 +318,7 @@ cinechef-dp800/
 │   ├── 05_functions.sql
 │   ├── 06_audit_trigger.sql
 │   ├── 07_procedures.sql
+│   ├── 10_indexes.sql
 │   ├── 08_advanced_queries.sql
 │   └── 09_security.sql
 ├── ai/
@@ -327,6 +336,10 @@ cinechef-dp800/
 │   ├── 09b_search_semantic_probes.sql
 │   ├── 10_rag.sql
 │   └── 11_rag_demo.sql
+├── performance/
+│   ├── 12_perf_setup.sql
+│   ├── 13_perf_before_after.sql
+│   └── 14_vector_index_experiment.sql
 ├── tests/
 │   ├── phase1_smoke_tests.sql
 │   ├── verify_counts.sql

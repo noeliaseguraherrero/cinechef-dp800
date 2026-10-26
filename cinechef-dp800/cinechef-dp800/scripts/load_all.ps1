@@ -1,4 +1,4 @@
-<#
+﻿<#
   CineChef - Recrea la base de datos y carga todos los datos de prueba.
   Ejecuta los scripts en orden con sqlcmd y se detiene ante el primer error.
 
@@ -41,6 +41,7 @@ $files = @(
     "tests\phase3_objects_tests.sql",
     "database\06_audit_trigger.sql",
     "database\07_procedures.sql",
+    "database\10_indexes.sql",
     "tests\phase3b_tests.sql",
     "database\09_security.sql",
     "tests\phase4_security_tests.sql"

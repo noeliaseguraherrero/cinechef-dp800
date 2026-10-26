@@ -75,6 +75,26 @@ EXEC dbo.usp_RecordRagAnswer
 Receta: ramen japonés con panceta de cerdo, caldo de cerdo y pollo, huevo marinado, cebolleta, setas y fideos de arroz sin gluten. Usa tamari en lugar de salsa de soja para evitar el gluten y no añadas leche. Es una adaptación apta para tu perfil, aunque el ramen tradicional suele llevar fideos de trigo.',
     @Answersource = N'GitHub Copilot Chat';
 
+EXEC dbo.usp_RecordRagAnswer
+    @RagId = 18,
+    @Answer = N'Película: Chef (2014), una comedia cálida y apetecible sobre empezar de nuevo, perfecta para ver entre amigos.
+Receta: Curry de garbanzos y coco con arroz (sin gluten y sin lácteos). Sofríe cebolla, ajo, jengibre y zanahoria; añade curry, tomate triturado, garbanzos cocidos y leche de coco. Cocina 20 minutos y sirve sobre arroz blanco, con cilantro y lima. Es reconfortante, fácil de compartir y se mantiene caliente mientras disfrutáis de la película.',
+    @Answersource = N'GitHub Copilot Chat';
+
+EXEC dbo.usp_RecordRagAnswer
+    @RagId = 19,
+    @Answer = N'Película: Coraline y la puerta secreta (2009), una aventura misteriosa y escalofriante, pero adecuada para valientes de 10 años.
+Receta: Pizza momia
+Cubre una base de pizza con salsa de tomate. Coloca tiras de queso formando vendas y dos aceitunas como ojos. Hornea hasta que el queso se derrita y sirva caliente. ¡Una cena monstruosamente deliciosa para comer durante la película!',
+    @Answersource = N'GitHub Copilot Chat';
+
+EXEC dbo.usp_RecordRagAnswer
+    @RagId = 20,
+    @Answer = N'Película: Los siete samuráis (Akira Kurosawa, 1954), clásico imprescindible del cine samurái.
+Receta: Ramen japonés de cerdo, sin gluten ni lácteos
+Cuece huesos de cerdo con ajo, jengibre, cebolla y cebolleta durante varias horas para preparar el caldo. Dora panceta de cerdo, añade salsa tamari certificada sin gluten, mirin y azúcar, y cuécela hasta que quede tierna; córtala en lonchas. Sirve el caldo con fideos de arroz, la panceta, huevo cocido, cebolleta y nori. Verífica que el mirin, el tamari y el nori no contengan trazas de gluten ni ingredientes lácteos.',
+    @Answersource = N'GitHub Copilot Chat';
+
 -- 5. Verificar la respuesta en SQL (¿solo cita lo recuperado? ¿sin alérgenos? ¿película apta?)
 EXEC dbo.usp_VerifyRagAnswer @RagId = 9;
 GO
@@ -92,6 +112,16 @@ EXEC dbo.usp_VerifyRagAnswer @RagId = 16;
 GO
 
 EXEC dbo.usp_VerifyRagAnswer @RagId = 17;
+GO
+
+
+EXEC dbo.usp_VerifyRagAnswer @RagId = 18;
+GO
+
+EXEC dbo.usp_VerifyRagAnswer @RagId = 19;
+GO
+
+EXEC dbo.usp_VerifyRagAnswer @RagId = 20;
 GO
 -- 6. Historial de sesiones
 SELECT RagId, UserId, LEFT(Question, 60) AS Question, WithContext, RecipeIds, MovieIds, CreatedAt, AnswerSource
