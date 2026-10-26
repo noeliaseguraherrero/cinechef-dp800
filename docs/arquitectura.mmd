@@ -1,0 +1,33 @@
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Helvetica','fontSize':'14px','primaryColor':'#EEF3FA','primaryBorderColor':'#2B6CB0','lineColor':'#4A5568'}}}%%
+flowchart TB
+    U["Usuario<br/>(SSMS 22 / aplicación)"]
+    subgraph SQL["SQL Server 2025 (local) · CineChefDB"]
+        direction LR
+        subgraph DATA["Datos"]
+            T["11 tablas de dominio + apoyo<br/>PK · FK · CHECK · UNIQUE"]
+            VEC["Embeddings VECTOR(384)<br/>Movies · Recipes"]
+            FT["Índices Full-Text<br/>CineChefFT"]
+        end
+        subgraph LOGIC["Lógica T-SQL"]
+            OBJ["Vistas · funciones inline<br/>procedimientos · trigger de auditoría"]
+            SRCH["Búsqueda híbrida (RRF)<br/>usp_SearchMovies / Recipes<br/>maridaje película-receta"]
+            RAG["RAG<br/>usp_BuildRagPrompt<br/>usp_RecordRagAnswer<br/>usp_VerifyRagAnswer"]
+        end
+        SEC["Seguridad<br/>roles · RLS · Dynamic Data Masking<br/>EXECUTE AS · auditoría"]
+    end
+    ONNX["Modelo local ONNX<br/>all-MiniLM-L6-v2<br/>AI_GENERATE_EMBEDDINGS"]
+    COP["GitHub Copilot Chat<br/>generación (paso manual)"]
+    U --> SEC
+    SEC --> OBJ
+    SEC --> SRCH
+    SEC --> RAG
+    OBJ --> T
+    SRCH --> VEC
+    SRCH --> FT
+    RAG --> SRCH
+    ONNX -. "embeddings" .-> VEC
+    RAG -. "prompt con contexto" .-> COP
+    COP -. "respuesta pegada" .-> RAG
+    classDef sec fill:#EBE0F7,stroke:#6B46C1;
+    classDef ext fill:#FDEBD3,stroke:#C05621;
+    class SEC sec; class ONNX,COP ext;
